@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang = "en">
+	<head>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://bootswatch.com/4/flatly/bootstrap.min.css" rel="stylesheet">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+    <!-- <link rel="icon" href="https://vignette1.wikia.nocookie.net/harrypotter/images/2/23/Hallows.png/revision/latest?cb=20090309113642"> -->
+		<title>Sentence Length Highlighting</title>
+	</head>
+	<body>
+    <br/>
+    <center>
+      <h1>
+        Sentence Length Highlighting
+      </h1>
+    </center>
+    <br/>
+    <br/>
+    <div class="container" id="input_container">
+      <textarea class="form-control" id="input" rows="20">
+      </textarea>
+      <br/>
+      <center>
+        <button type="button" class="btn btn-success" id="inputButton" onclick="moveSentences()">Input</button>
+      </center>
+    </div>
+    <div class="container" id="output">
+    </div>
+
+    <div class="container" id="motivation">
+      <br/>
+      <h3>
+        Motivation
+      </h3>
+    </div>
+		<!-- Global Site Tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_TRACKING_ID"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-65400911-1');
+    </script>
+
+    <script>
+      function moveSentences() {
+        $('#inputButton').hide();
+        $('#input').hide();
+        const text = $('#input').val();
+        let out = "";
+        const paragraphs = text.split('\n');
+        for(var i = 0; i < paragraphs.length; ++i) {
+          out += `<p>${paragraphs[i]}</p>`;
+        }
+
+        $('#output').html(out);
+        highlightSentences();
+      }
+
+      // https://github.com/GitbookIO/tokenize-english/blob/master/lib/abbreviations.js
+      const abbreviations = [
+        "ie",
+        "eg",
+        "ext", // + number?
+        "Fig",
+        "fig",
+        "Figs",
+        "figs",
+        "et al",
+        "Co",
+        "Corp",
+        "Ave",
+        "Inc",
+        "Ex",
+        "Viz",
+        "vs",
+        "Vs",
+        "repr",
+        "Rep",
+        "Dem",
+        "trans",
+        "Vol",
+        "pp",
+        "rev",
+        "est",
+        "Ref",
+        "Refs",
+        "Eq",
+        "Eqs",
+        "Ch",
+        "Sec",
+        "Secs",
+        "mi",
+        "Dept",
+
+        "Univ",
+        "Nos",
+        "No",
+        "Mol",
+        "Cell",
+
+        "Miss", "Mrs", "Mr", "Ms",
+        "Prof", "Dr",
+        "Sgt", "Col", "Gen", "Rep", "Sen",'Gov', "Lt", "Maj", "Capt","St",
+
+        "Sr", "Jr", "jr", "Rev",
+        "PhD", "MD", "BA", "MA", "MM",
+        "BSc", "MSc",
+
+        "Jan","Feb","Mar","Apr","Jun","Jul","Aug","Sep","Sept","Oct","Nov","Dec",
+        "Sun","Mon","Tu","Tue","Tues","Wed","Th","Thu","Thur","Thurs","Fri","Sat"
+      ];
+
+      // http://compromise.cool/website/browse/sentence_parser.html
+      function parseSentences(text) {
+        const sentences = [];
+        console.log(text, typeof(text));
+        const chunks = text.split(/(\S.+?[.\?!])(?=\s+|$|")/g);
+
+        const abbrev_reg = new RegExp('\\b(' + abbreviations.join('|') + ')[.!?] ?$', 'i');
+        const acronym_reg = new RegExp('[ |\.][A-Z]\.?$', 'i');
+        const elipses_reg = new RegExp('\\.\\.\\.*$');
+
+        const chunks_length = chunks.length;
+        for (let i = 0; i < chunks_length; i++) {
+          if (chunks[i]) {
+            chunks[i] = chunks[i].replace(/^\s+|\s+$/g, '');
+            if (chunks[i + 1] && (chunks[i].match(abbrev_reg) || chunks[i].match(acronym_reg) || chunks[i].match(elipses_reg))) {
+              chunks[i + 1] = ((chunks[i] || '') + ' ' + (chunks[i + 1] || '')).replace(/ +/g, ' ');
+            } else if (chunks[i] && chunks[i].length > 0) { //this chunk is a proper sentence..
+              sentences.push(chunks[i]);
+              chunks[i] = '';
+            }
+          }
+        }
+
+        if (sentences.length === 0) {
+          return [text];
+        }
+
+        return sentences;
+      }
+
+      // modified from: https://codepen.io/brandonbrule/pen/qqqRLZ
+      function highlightSentences() {
+        var paragraphs = document.getElementsByTagName('p');
+        
+        // Sentence length colors
+        var c = {
+          s: '#fcf9cf',
+          m: '#f3cff1',
+          l: '#c4f0c5',
+          xl: '#9befee'
+        };
+        
+        // Sentence Lengths
+        var len = {
+          s: 15,
+          m: 35,
+          l: 120
+        };
+
+        [].forEach.call(paragraphs, function(p){
+          // var sentences = p.innerHTML.split('.'); // needs to be improved
+          var sentences = parseSentences(p.textContent);
+          var html = [];
+
+          [].forEach.call(sentences, function(sentence){
+
+            // Short Text
+            if (sentence.length < len.s){
+              html.push('<span style="background:' + c.s + '">' + sentence + '</span>');
+            }
+
+            // Medium Text
+            if (sentence.length >= len.s && sentence.length < len.m ){
+              html.push('<span style="background:' + c.m + '">' + sentence + '</span>');
+            }
+
+            // Large Text
+            if (sentence.length >= len.m && sentence.length < len.l ){
+              html.push('<span style="background:' + c.l + '">' + sentence + '</span>');
+            }
+
+            // X-Large Text
+            if (sentence.length > len.l ){
+              html.push('<span style="background:' + c.xl + '">' + sentence + '</span>');
+            }
+
+          });
+
+          p.innerHTML = html.join(' ');
+        });
+      }
+    </script>
+	</body>
+</html>
