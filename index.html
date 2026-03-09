@@ -1,203 +1,390 @@
-<!DOCTYPE html>
-<html lang = "en">
-	<head>
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-
-    <!-- Bootstrap CSS -->
-    <link href="https://bootswatch.com/4/flatly/bootstrap.min.css" rel="stylesheet">
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
-    <!-- <link rel="icon" href="https://vignette1.wikia.nocookie.net/harrypotter/images/2/23/Hallows.png/revision/latest?cb=20090309113642"> -->
-		<title>Sentence Length Highlighting</title>
-	</head>
-	<body>
-    <br/>
-    <center>
-      <h1>
-        Sentence Length Highlighting
-      </h1>
-    </center>
-    <br/>
-    <br/>
-    <div class="container" id="input_container">
-      <textarea class="form-control" id="input" rows="20">
-      </textarea>
-      <br/>
-      <center>
-        <button type="button" class="btn btn-success" id="inputButton" onclick="moveSentences()">Input</button>
-      </center>
-    </div>
-    <div class="container" id="output">
-    </div>
-
-    <div class="container" id="motivation">
-      <br/>
-      <h3>
-        Motivation
-      </h3>
-
-      I recently came across a <a href="https://twitter.com/nathanbaugh27/status/1591442834053529601">tweet</a>  that highlighted a quote from Gary Provost that talked about sentence length. Short sentences are nice. But they are dull. Not always. At least if you put many in a row. So, Provost says that you should also use longer sentences that break up the monotony to keep the reader interested in what you’ll say next. I figured, there ought to be a nice a tool out there. Nope. I couldn’t find one I really liked. So, I made one myself. That said, this is more an agglomeration of other people’s code that I’ve cited in the source file.
-      <br/>
-      <br/>
-    </div>
-		<!-- Global Site Tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_TRACKING_ID"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'UA-65400911-1');
-    </script>
-
-    <script>
-      function moveSentences() {
-        $('#inputButton').hide();
-        $('#input').hide();
-        const text = $('#input').val();
-        let out = "";
-        const paragraphs = text.split('\n');
-        for(var i = 0; i < paragraphs.length; ++i) {
-          out += `<p>${paragraphs[i]}</p>`;
-        }
-
-        $('#output').html(out);
-        highlightSentences();
-      }
-
-      // https://github.com/GitbookIO/tokenize-english/blob/master/lib/abbreviations.js
-      const abbreviations = [
-        "ie",
-        "eg",
-        "ext", // + number?
-        "Fig",
-        "fig",
-        "Figs",
-        "figs",
-        "et al",
-        "Co",
-        "Corp",
-        "Ave",
-        "Inc",
-        "Ex",
-        "Viz",
-        "vs",
-        "Vs",
-        "repr",
-        "Rep",
-        "Dem",
-        "trans",
-        "Vol",
-        "pp",
-        "rev",
-        "est",
-        "Ref",
-        "Refs",
-        "Eq",
-        "Eqs",
-        "Ch",
-        "Sec",
-        "Secs",
-        "mi",
-        "Dept",
-
-        "Univ",
-        "Nos",
-        "No",
-        "Mol",
-        "Cell",
-
-        "Miss", "Mrs", "Mr", "Ms",
-        "Prof", "Dr",
-        "Sgt", "Col", "Gen", "Rep", "Sen",'Gov', "Lt", "Maj", "Capt","St",
-
-        "Sr", "Jr", "jr", "Rev",
-        "PhD", "MD", "BA", "MA", "MM",
-        "BSc", "MSc",
-
-        "Jan","Feb","Mar","Apr","Jun","Jul","Aug","Sep","Sept","Oct","Nov","Dec",
-        "Sun","Mon","Tu","Tue","Tues","Wed","Th","Thu","Thur","Thurs","Fri","Sat"
-      ];
-
-      // http://compromise.cool/website/browse/sentence_parser.html
-      function parseSentences(text) {
-        const sentences = [];
-        console.log(text, typeof(text));
-        const chunks = text.split(/(\S.+?[.\?!])(?=\s+|$|")/g);
-
-        const abbrev_reg = new RegExp('\\b(' + abbreviations.join('|') + ')[.!?] ?$', 'i');
-        const acronym_reg = new RegExp('[ |\.][A-Z]\.?$', 'i');
-        const elipses_reg = new RegExp('\\.\\.\\.*$');
-
-        const chunks_length = chunks.length;
-        for (let i = 0; i < chunks_length; i++) {
-          if (chunks[i]) {
-            chunks[i] = chunks[i].replace(/^\s+|\s+$/g, '');
-            if (chunks[i + 1] && (chunks[i].match(abbrev_reg) || chunks[i].match(acronym_reg) || chunks[i].match(elipses_reg))) {
-              chunks[i + 1] = ((chunks[i] || '') + ' ' + (chunks[i + 1] || '')).replace(/ +/g, ' ');
-            } else if (chunks[i] && chunks[i].length > 0) { //this chunk is a proper sentence..
-              sentences.push(chunks[i]);
-              chunks[i] = '';
-            }
-          }
-        }
-
-        if (sentences.length === 0) {
-          return [text];
-        }
-
-        return sentences;
-      }
-
-      // modified from: https://codepen.io/brandonbrule/pen/qqqRLZ
-      function highlightSentences() {
-        var paragraphs = document.getElementsByTagName('p');
-        
-        // Sentence length colors
-        var c = {
-          s: '#fcf9cf',
-          m: '#f3cff1',
-          l: '#c4f0c5',
-          xl: '#9befee'
-        };
-        
-        // Sentence Lengths
-        var len = {
-          s: 15,
-          m: 35,
-          l: 120
-        };
-
-        [].forEach.call(paragraphs, function(p){
-          // var sentences = p.innerHTML.split('.'); // needs to be improved
-          var sentences = parseSentences(p.textContent);
-          var html = [];
-
-          [].forEach.call(sentences, function(sentence){
-
-            // Short Text
-            if (sentence.length < len.s){
-              html.push('<span style="background:' + c.s + '">' + sentence + '</span>');
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Sentence Length Highlighting</title>
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
             }
 
-            // Medium Text
-            if (sentence.length >= len.s && sentence.length < len.m ){
-              html.push('<span style="background:' + c.m + '">' + sentence + '</span>');
+            body {
+                background: #1a1a2e;
+                color: #e0e0e0;
+                font-family: "Georgia", serif;
+                min-height: 100vh;
+                padding: 2rem 1rem;
             }
 
-            // Large Text
-            if (sentence.length >= len.m && sentence.length < len.l ){
-              html.push('<span style="background:' + c.l + '">' + sentence + '</span>');
+            h1 {
+                text-align: center;
+                font-size: 1.8rem;
+                color: #c9d1d9;
+                margin-bottom: 0.4rem;
+                letter-spacing: 0.05em;
             }
 
-            // X-Large Text
-            if (sentence.length > len.l ){
-              html.push('<span style="background:' + c.xl + '">' + sentence + '</span>');
+            .legend {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+                font-size: 0.82rem;
+                color: #8b949e;
+            }
+            .legend-item {
+                display: flex;
+                align-items: center;
+                gap: 0.4rem;
+            }
+            .swatch {
+                width: 12px;
+                height: 12px;
+                border-radius: 3px;
+                display: inline-block;
             }
 
-          });
+            .panels {
+                display: flex;
+                gap: 1rem;
+                max-width: 1100px;
+                margin: 0 auto;
+                align-items: stretch;
+            }
 
-          p.innerHTML = html.join(' ');
-        });
-      }
-    </script>
-	</body>
+            .panel {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .panel-label {
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                color: #8b949e;
+                margin-bottom: 0.4rem;
+            }
+
+            textarea {
+                flex: 1;
+                width: 100%;
+                min-height: 420px;
+                background: #16213e;
+                color: #c9d1d9;
+                border: 1px solid #30363d;
+                border-radius: 8px;
+                padding: 1rem;
+                font-family: "Georgia", serif;
+                font-size: 1rem;
+                line-height: 1.8;
+                resize: none;
+                outline: none;
+                transition: border-color 0.2s;
+            }
+            textarea:focus {
+                border-color: #58a6ff;
+            }
+
+            #output {
+                flex: 1;
+                min-height: 420px;
+                background: #16213e;
+                border: 1px solid #30363d;
+                border-radius: 8px;
+                padding: 1rem;
+                font-size: 1rem;
+                line-height: 1.8;
+                overflow-y: auto;
+                color: #c9d1d9;
+            }
+
+            #output p {
+                margin-bottom: 0.8em;
+            }
+            #output .placeholder {
+                color: #4a5568;
+                font-style: italic;
+            }
+
+            .hl-xs {
+                background: #4a3f00;
+                color: #f0d060;
+                border-radius: 3px;
+                padding: 0 2px;
+            }
+            .hl-s {
+                background: #4a2600;
+                color: #f0a060;
+                border-radius: 3px;
+                padding: 0 2px;
+            }
+            .hl-m {
+                background: #3b1a4a;
+                color: #d09ae0;
+                border-radius: 3px;
+                padding: 0 2px;
+            }
+            .hl-l {
+                background: #0d3320;
+                color: #6fcf97;
+                border-radius: 3px;
+                padding: 0 2px;
+            }
+            .hl-xl {
+                background: #003040;
+                color: #56cfe1;
+                border-radius: 3px;
+                padding: 0 2px;
+            }
+
+            .motivation {
+                max-width: 1100px;
+                margin: 2rem auto 0;
+                border-top: 1px solid #30363d;
+                padding-top: 1.25rem;
+                color: #8b949e;
+                font-size: 0.9rem;
+                line-height: 1.7;
+            }
+            .motivation a {
+                color: #58a6ff;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Sentence Length Highlighting</h1>
+
+        <div class="legend">
+            <span class="legend-item"
+                ><span class="swatch" style="background: #4a3f00"></span>
+                X-Short (1–2 words)</span
+            >
+            <span class="legend-item"
+                ><span class="swatch" style="background: #4a2600"></span> Short
+                (3–5 words)</span
+            >
+            <span class="legend-item"
+                ><span class="swatch" style="background: #3b1a4a"></span> Medium
+                (6–10 words)</span
+            >
+            <span class="legend-item"
+                ><span class="swatch" style="background: #0d3320"></span> Long
+                (11–15 words)</span
+            >
+            <span class="legend-item"
+                ><span class="swatch" style="background: #003040"></span> X-Long
+                (16+ words)</span
+            >
+        </div>
+
+        <div class="panels">
+            <div class="panel">
+                <div class="panel-label">Input</div>
+                <textarea id="input" placeholder="Start typing…"></textarea>
+            </div>
+            <div class="panel">
+                <div class="panel-label">Preview</div>
+                <div id="output">
+                    <span class="placeholder"
+                        >Highlighted text will appear here as you type…</span
+                    >
+                </div>
+            </div>
+        </div>
+
+        <div class="motivation">
+            <p id="motivation-text">
+                Inspired by a tweet (since taken down) about
+                <a href="provost_example.jpg"
+                    >Gary Provost's advice on sentence length variety.</a
+                >
+                Short sentences punch. But a long string of them grows tedious.
+                Mixing lengths — short bursts with longer, flowing sentences —
+                keeps prose alive and the reader turning pages.
+            </p>
+        </div>
+
+        <script>
+            const abbreviations = [
+                "ie",
+                "eg",
+                "ext",
+                "Fig",
+                "fig",
+                "Figs",
+                "figs",
+                "et al",
+                "Co",
+                "Corp",
+                "Ave",
+                "Inc",
+                "Ex",
+                "Viz",
+                "vs",
+                "Vs",
+                "repr",
+                "Rep",
+                "Dem",
+                "trans",
+                "Vol",
+                "pp",
+                "rev",
+                "est",
+                "Ref",
+                "Refs",
+                "Eq",
+                "Eqs",
+                "Ch",
+                "Sec",
+                "Secs",
+                "mi",
+                "Dept",
+                "Univ",
+                "Nos",
+                "No",
+                "Mol",
+                "Cell",
+                "Miss",
+                "Mrs",
+                "Mr",
+                "Ms",
+                "Prof",
+                "Dr",
+                "Sgt",
+                "Col",
+                "Gen",
+                "Rep",
+                "Sen",
+                "Gov",
+                "Lt",
+                "Maj",
+                "Capt",
+                "St",
+                "Sr",
+                "Jr",
+                "jr",
+                "Rev",
+                "PhD",
+                "MD",
+                "BA",
+                "MA",
+                "MM",
+                "BSc",
+                "MSc",
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Sept",
+                "Oct",
+                "Nov",
+                "Dec",
+                "Sun",
+                "Mon",
+                "Tu",
+                "Tue",
+                "Tues",
+                "Wed",
+                "Th",
+                "Thu",
+                "Thur",
+                "Thurs",
+                "Fri",
+                "Sat",
+            ];
+
+            function parseSentences(text) {
+                const sentences = [];
+                const chunks = text.split(/(\S.+?[.\?!])(?=\s+|$|")/g);
+                const abbrev_reg = new RegExp(
+                    "\\b(" + abbreviations.join("|") + ")[.!?] ?$",
+                    "i",
+                );
+                const acronym_reg = /[ |\.][A-Z]\.?$/i;
+                const elipses_reg = /\.\.\.*$/;
+
+                for (let i = 0; i < chunks.length; i++) {
+                    if (!chunks[i]) continue;
+                    chunks[i] = chunks[i].replace(/^\s+|\s+$/g, "");
+                    if (
+                        chunks[i + 1] &&
+                        (chunks[i].match(abbrev_reg) ||
+                            chunks[i].match(acronym_reg) ||
+                            chunks[i].match(elipses_reg))
+                    ) {
+                        chunks[i + 1] = (
+                            chunks[i] +
+                            " " +
+                            chunks[i + 1]
+                        ).replace(/ +/g, " ");
+                    } else if (chunks[i].length > 0) {
+                        sentences.push(chunks[i]);
+                        chunks[i] = "";
+                    }
+                }
+                return sentences.length ? sentences : [text];
+            }
+
+            function wordCount(s) {
+                return s.trim().split(/\s+/).filter(Boolean).length;
+            }
+
+            function cls(s) {
+                const w = wordCount(s);
+                if (w <= 2) return "hl-xs";
+                if (w <= 5) return "hl-s";
+                if (w <= 10) return "hl-m";
+                if (w <= 15) return "hl-l";
+                return "hl-xl";
+            }
+
+            function escapeHtml(str) {
+                return str
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;");
+            }
+
+            function render(text) {
+                const out = document.getElementById("output");
+                if (!text.trim()) {
+                    out.innerHTML =
+                        '<span class="placeholder">Highlighted text will appear here as you type…</span>';
+                    return;
+                }
+                out.innerHTML = text
+                    .split("\n")
+                    .map((para) => {
+                        if (!para.trim()) return "<p>&nbsp;</p>";
+                        const sentences = parseSentences(para);
+                        const html = sentences
+                            .map(
+                                (s) =>
+                                    `<span class="${cls(s)}">${escapeHtml(s)}</span>`,
+                            )
+                            .join(" ");
+                        return `<p>${html}</p>`;
+                    })
+                    .join("");
+            }
+
+            let debounceTimer;
+            document
+                .getElementById("input")
+                .addEventListener("input", function () {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => render(this.value), 120);
+                });
+        </script>
+    </body>
 </html>
